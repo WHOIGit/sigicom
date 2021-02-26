@@ -1,7 +1,7 @@
 # sigicom
 A CLI tool for downloading and collating C22 Transient Event data from Sigicom's Infra API.
 
-Created for the `SIDEx 2020` project (Kevin Manganini, Erin Fischell, feat. Kat Fung)
+Created for the `SIDEx 2020` project (Kevin Manganini, Erin Fischell, Kat Fung)
 
 ## Installation
 The only requirements are python with pandas and requests.
