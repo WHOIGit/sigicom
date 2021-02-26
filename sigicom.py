@@ -27,7 +27,7 @@ def make_argparser():
     parser = argparse.ArgumentParser(description='This is a tool for searching for, downloading, and processing transient event data from Sigicom\'s v1 API. All dates and times are in UTC.')
 
     subparsers = parser.add_subparsers(dest='subcommand', required=True, help='These subcommands are mutually exclusive and intended to be used in successive order. Use "--help" to learn more about each subcommand.')
-    exp_parser = subparsers.add_parser('AVAIL', help='Displays available Projects and Sensors based on your authentication.')
+    exp_parser = subparsers.add_parser('AVAIL', help='Displays available Projects and Nodes based on your authentication.')
     query_parser = subparsers.add_parser('QUERY', help='Query Sigicom for data according to some criteria. Outputs a search-results file to output ROOT, a Search ID to be used by "GET", and some result metrics')
     fetch_parser = subparsers.add_parser('GET', help='Download transients from Sigicom and process events. Processed files are always GPS-time adjusted.')
 
@@ -45,9 +45,9 @@ def make_argparser():
     default_results = path('{ROOT}', 'results')
 
     # QUERY
-    project_or_sensors = query_parser.add_mutually_exclusive_group(required=True)
-    project_or_sensors.add_argument('--project', metavar='ID', help='Limit results to a certain Project by ID (not Name). Node "ID"\'s will differ from --sensor "SN"\'s. Mutually exclusive with --sensors.')
-    project_or_sensors.add_argument('--sensors', metavar='SN', nargs='+', type=int, help='Node Serial Numbers to query for. Currently only "C22" type devices are valid. Mutually exclusive with --project.')
+    project_or_nodes = query_parser.add_mutually_exclusive_group(required=True)
+    project_or_nodes.add_argument('--project', metavar='ID', help='Limit results to a certain Project by ID (not Name). Node "ID"\'s will differ from --nodes "SN"\'s. Mutually exclusive with --nodes.')
+    project_or_nodes.add_argument('--nodes', metavar='SN', nargs='+', type=int, help='Node Serial Numbers to query for. Currently only "C22" type devices are valid. Mutually exclusive with --project.')
     query_parser.add_argument('--date', metavar='START', required=True, type=dt.date.fromisoformat, help='Query Start Date (YYYY-MM-DD) utc. This field is required.')
     query_parser.add_argument('--enddate', metavar='END', type=dt.date.fromisoformat, help='Query End Date, inclusive (YYYY-MM-DD) utc. If not specified, the current date is assumed.')
     query_parser.add_argument('--output', **outdir_kwargs)
@@ -55,9 +55,9 @@ def make_argparser():
 
     # GET: Fetch and Process #
     fetch_parser.add_argument('--id', required=True, help='The Search ID from a previously issues search query. A search results file will be downloaded/cached to the results/output ROOT directory. This value is non-optional')
-    fetch_parser.add_argument('--limit-to', metavar='NUM', default='1+', help='Limit download/processing to transients with NUM number of unique overlapping instruments. Eg "4" will only download transients that are concurent-in-time with 3 other instruments\' transients. "3+" will download transients are concurent-in-time with 2 OR MORE other instruments\' transients. The default is "1+" aka no limit.')
+    fetch_parser.add_argument('--limit-to', metavar='NUM', default='1+', help='Limit download/processing to transients with NUM number of unique overlapping instruments. Eg "4" will only download transients that are concurent-in-time with 3 other instruments\' transients. "3+" will download transients are concurent-in-time with 2 OR MORE other instruments\' transients. The default is "1+", ie no limit.')
     fetch_parser.add_argument('--overlap', metavar='SECONDS', default=40, type=int, help='Transient Events are aggregated according to whether they overlap in time. This argument adjusts the permitted overlap window. If "-1", processed transient events are not grouped. Default is "40" seconds')
-    fetch_parser.add_argument('--dry-run', action='store_true', help='If invoked, no downloading or processing is excecuted. This is useful for getting a sense of how many files will be downloaded/processed.')
+    fetch_parser.add_argument('--dry-run', action='store_true', help='If invoked, a summary of files to-be-downloaded/created is shown. No downloading or processing is excecuted.')
     # TODO limit processing to start and end dates or epochs
     # TODO clobber-proc, otherwise skip already created files
     # TODO what to do when you run out of memory for a large overlap of files
@@ -93,7 +93,7 @@ def do_AVAIL(args):
         return project_data
 
     sensor_data = get_sensors(AUTH)
-    print('\nAVAIL SENSORS')
+    print('\nAVAIL NODES')
     for sensor in sensor_data:
         print('  SN: {serial} (type {type})'.format(**sensor))
 
@@ -143,15 +143,15 @@ def get_search(search_id, AUTH, interval=10):
 
 
 def print_query_result_summary(query_result):
-    sensors_trancount = dict()
+    nodes_trancount = dict()
     for t in query_result['transients']:
-        sensors = [sn for sn in t.keys() if sn not in ['timestamp','datetime']]
-        for sensor in sensors:
-            try: sensors_trancount[sensor] += 1
-            except KeyError: sensors_trancount[sensor] = 1
-    print('  Sensors : Transient Events')
+        nodes = [sn for sn in t.keys() if sn not in ['timestamp','datetime']]
+        for node in nodes:
+            try: nodes_trancount[node] += 1
+            except KeyError: nodes_trancount[node] = 1
+    print('    Nodes : Transient Events')
     trancount = 0
-    for sn,count in sensors_trancount.items():
+    for sn,count in nodes_trancount.items():
         print('   {:>6} : {:>5}'.format(sn,count))
         trancount += count
     print('    TOTAL :', trancount)
@@ -168,8 +168,8 @@ def do_QUERY(args):
              'data_types':{'transient':True}}
     if args.enddate:
         query['datetime_to'] = args.enddate.isoformat()+' 23:59:59'
-    if args.sensors:
-        query['devices'] = [{"type": "C22", "serial": sn} for sn in args.sensors]
+    if args.nodes:
+        query['devices'] = [{"type": "C22", "serial": sn} for sn in args.nodes]
     query = json.dumps(query)
 
     # FORMING QUERY URL
