@@ -11,7 +11,7 @@ from numpy import isnan, invert
 path = os.path.join
 
 API_URL='https://{SUBDOM}.infralogin.com/api/v1'
-SEARCH_RESULTS_FILE = '{ROOT}/query_results.{ID}.json'
+SEARCH_RESULTS_FILE = path('{ROOT}','query_results.{ID}.json')
 
 
 def open_authfile(fname):
