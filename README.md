@@ -5,6 +5,7 @@ Created for the `SIDEx 2020` project (Kevin Manganini, Erin Fischell, feat. Kat 
 
 ## Installation
 The only requirements are python with pandas and requests.
+
 `conda env create --file env.yml`
 
 
